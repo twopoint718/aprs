@@ -1,0 +1,11 @@
+#+TITLE: Raspberry Pi Pico/RP2040 Feather
+#+AUTHOR: Christopher Wilson
+
+* APIs
+** I2C
+
+*** Adafruit_MCP4725
+- [ ] i2c address 0x62
+- [ ] 12-bit ADC, values 0 ... 4095
+** Interrupts
+** Clocks
