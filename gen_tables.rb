@@ -1,5 +1,5 @@
-# Resolution of the DAC in bits
-DEPTH = 12
+# Max value in the sine wave (in bits)
+DEPTH = 6
 
 # How many samples in a full sine wave
 SAMPLES = 256
@@ -29,16 +29,11 @@ def format_nums(nums)
 end
 
 def gen_tables
-  hi = [] # high byte
-  lo = [] # low nybble
-                              # Bit-pattern mask -> bit-pattern within byte
-  gen_nums.each do |n|        # ABCD EFGH IJKL
-    hi << ((n & 0xFF0) >> 4)  # 1111 1111 0000 -> ABCD EFGH
-    lo << ((n & 0x00F) << 4)  # 0000 0000 1111 -> IJKL xxxx
+  nums = []
+  gen_nums.each do |n|
+    nums << (n & 0xFF)
   end
-
-  puts "const uint8_t buf_hi[#{SAMPLES}] = {#{format_nums(hi)}\n};"
-  puts "const uint8_t buf_lo[#{SAMPLES}] = {#{format_nums(lo)}\n};"
+  puts "const uint8_t wav[#{SAMPLES}] = {#{format_nums(nums)}\n};"
 end
 
 gen_tables

@@ -16,6 +16,6 @@ add_executable(helloworld serial.c)
 pico_enable_stdio_usb(helloworld 1)
 pico_enable_stdio_uart(helloworld 0)
 
-target_link_libraries(helloworld pico_stdlib hardware_i2c)
+target_link_libraries(helloworld pico_stdlib hardware_pwm)
 
 pico_add_extra_outputs(helloworld)

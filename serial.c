@@ -1,38 +1,65 @@
 #include "pico/stdlib.h"
-#include "hardware/i2c.h"
-#include <stdio.h>
+#include "hardware/pwm.h"
 #include "serial.h"
 
-// Adafruit MCP4725 12-bit DAC: https://www.adafruit.com/product/935
-// Guide: https://learn.adafruit.com/mcp4725-12-bit-dac-tutorial
-#define MCP4725_I2CADDR_DEFAULT (0x62)      // Default i2c address
-#define MCP4725_CMD_WRITEDAC (0x40)         // Writes data to the DAC
-#define SDA_PIN (2)
-#define SCL_PIN (3)
-#define NUM_SAMPLES (256)
+// PWM runs at about 488 kHz with COUNTER_TOP == 255
+//                   5MHz         COUNTER_TOP == 24
+#define COUNTER_TOP 49
+
+// Number of steps in the accumulator (should be a power of 2)
+#define ACCUMULATOR_STEPS 2048
+
+// Time in us between timer interrupts (sample updates) 2us == 500kHz
+#define CALLBACK_PERIOD 2
+
+// Initial PWM setting 50% duty cycle
+static uint16_t pwm_level = COUNTER_TOP/2;
+
+// Which slice the selected PWM pin belongs to (global for ISR)
+static uint16_t slice_num;
+
+// Step (phase) in the wav table
+static uint8_t sample_index;
+
+// Storage for repeating timer
+static repeating_timer_t timer_config;
+
+volatile struct DDS sound = {
+	.increment = ACCUMULATOR_STEPS,
+	.position = 0,
+	.accumulator = 0
+};
+
+bool repeating_timer_callback(struct repeating_timer *t) {
+	if (sample_index > COUNTER_TOP) {
+		sample_index = 0;
+	}
+	pwm_set_chan_level(slice_num, PWM_CHAN_B, wav[sample_index++]);
+	return true;
+}
 
 int main() {
-    stdio_init_all();
+	// Tell GPIO 13 to be allocated to the PWM (this is also onboard LED)
+	gpio_set_function(13, GPIO_FUNC_PWM);
 
-    i2c_init(i2c1, 400 * 1000);
+	// Find out which PWM slice is connected to GPIO 13 (Slice 6, pin B)
+	slice_num = pwm_gpio_to_slice_num(13);
 
-    // Pinout Adafruit Feather RP2040: https://learn.adafruit.com/assets/100740
-    gpio_set_function(SDA_PIN, GPIO_FUNC_I2C); // GPIO 02 / SDA
-    gpio_set_function(SCL_PIN, GPIO_FUNC_I2C); // GPIO 03 / SCL
+	// Free-running counting at rate dictated by fractional divider
+	pwm_set_clkdiv_mode(slice_num, PWM_DIV_FREE_RUNNING);
 
-    // I2C wants line held high when inactive
-    gpio_pull_up(SDA_PIN);
-    gpio_pull_up(SCL_PIN);
+	// Set counter TOP value
+	pwm_set_wrap(slice_num, COUNTER_TOP);
 
-    uint8_t packet[3];
+	// Set divider to 1 (no division, ~125 MHz sys clock is used)
+	pwm_set_clkdiv_int_frac(slice_num, 1, 0); // DIV_INT + DIV_FRAC/16
 
-    uint8_t i = 0;
-    while (true) {                        // Arrange upper and lower bytes
-        packet[0] = MCP4725_CMD_WRITEDAC;
-        packet[1] = buf_hi[i];            // D11 D10 D09 D08 D07 D06 D05 D04
-        packet[2] = buf_lo[i];            // D03 D02 D01 D00 xxx xxx xxx xxx
+	// Set comparison level (when counter reaches this value, output goes low)
+	pwm_set_chan_level(slice_num, PWM_CHAN_B, pwm_level); // 50% duty cycle
 
-        i2c_write_blocking(i2c1, MCP4725_I2CADDR_DEFAULT, packet, 3, true);
-        i++;
-    }
+	// Set the PWM running
+	pwm_set_enabled(slice_num, true);
+
+	// Set up a repeated timer
+	add_repeating_timer_us(CALLBACK_PERIOD, repeating_timer_callback, NULL, &timer_config);
 }
