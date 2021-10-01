@@ -1,10 +1,11 @@
-# Max value in the sine wave (in bits)
-DEPTH = 6
+# Max value in the sine wave
+COUNTER_TOP = 124
 
 # How many samples in a full sine wave
-SAMPLES = 256
+SAMPLES = 64
 
-SCALE = 1 << (DEPTH - 1)
+# Wave is shifted up so that "0" becomes half maximum amplitude (min amplitude is actual 0)
+SCALE = COUNTER_TOP / 2
 
 def eqn(t)
   (SCALE * (Math.sin(2.0 * Math::PI * t / SAMPLES) + 1.0)).floor

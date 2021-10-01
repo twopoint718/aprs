@@ -3,23 +3,25 @@
 #include "serial.h"
 
 // PWM runs at about 488 kHz with COUNTER_TOP == 255
+//                   1MHz         COUNTER_TOP == 124
 //                   5MHz         COUNTER_TOP == 24
-#define COUNTER_TOP 49
+#define COUNTER_TOP 124
 
 // Number of steps in the accumulator (should be a power of 2)
 #define ACCUMULATOR_STEPS 2048
 
 // Time in us between timer interrupts (sample updates) 2us == 500kHz
-#define CALLBACK_PERIOD 2
+//                                                      7us =~ 143kHz
+#define CALLBACK_PERIOD 7
 
-// Initial PWM setting 50% duty cycle
-static uint16_t pwm_level = COUNTER_TOP/2;
+// Number of sine wave samples in the table
+const uint16_t max_table_index = (sizeof(wav) / sizeof(uint8_t)) - 1;
 
 // Which slice the selected PWM pin belongs to (global for ISR)
 static uint16_t slice_num;
 
 // Step (phase) in the wav table
-static uint8_t sample_index;
+static uint16_t sample_index;
 
 // Storage for repeating timer
 static repeating_timer_t timer_config;
@@ -31,7 +33,7 @@ volatile struct DDS sound = {
 };
 
 bool repeating_timer_callback(struct repeating_timer *t) {
-	if (sample_index > COUNTER_TOP) {
+	if (sample_index > max_table_index) {
 		sample_index = 0;
 	}
 	pwm_set_chan_level(slice_num, PWM_CHAN_B, wav[sample_index++]);
@@ -55,7 +57,7 @@ int main() {
 	pwm_set_clkdiv_int_frac(slice_num, 1, 0); // DIV_INT + DIV_FRAC/16
 
 	// Set comparison level (when counter reaches this value, output goes low)
-	pwm_set_chan_level(slice_num, PWM_CHAN_B, pwm_level); // 50% duty cycle
+	pwm_set_chan_level(slice_num, PWM_CHAN_B, wav[sample_index]);
 
 	// Set the PWM running
 	pwm_set_enabled(slice_num, true);
