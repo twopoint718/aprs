@@ -2,18 +2,6 @@
 #include "hardware/pwm.h"
 #include "serial.h"
 
-// PWM runs at about 488 kHz with COUNTER_TOP == 255
-//                   1MHz         COUNTER_TOP == 124
-//                   5MHz         COUNTER_TOP == 24
-#define COUNTER_TOP 124
-
-// Number of steps in the accumulator (should be a power of 2)
-#define ACCUMULATOR_STEPS 2048
-
-// Time in us between timer interrupts (sample updates) 2us == 500kHz
-//                                                      7us =~ 143kHz
-#define CALLBACK_PERIOD 7
-
 // Number of sine wave samples in the table
 const uint16_t max_table_index = (sizeof(wav) / sizeof(uint8_t)) - 1;
 
@@ -21,26 +9,20 @@ const uint16_t max_table_index = (sizeof(wav) / sizeof(uint8_t)) - 1;
 static uint16_t slice_num;
 
 // Step (phase) in the wav table
-static uint16_t sample_index;
-
-// Storage for repeating timer
-static repeating_timer_t timer_config;
-
-volatile struct DDS sound = {
-	.increment = ACCUMULATOR_STEPS,
-	.position = 0,
-	.accumulator = 0
-};
+uint16_t sample_index;
 
 bool repeating_timer_callback(struct repeating_timer *t) {
 	if (sample_index > max_table_index) {
 		sample_index = 0;
 	}
-	pwm_set_chan_level(slice_num, PWM_CHAN_B, wav[sample_index++]);
+	pwm_set_chan_level(slice_num, PWM_CHAN_B, (uint16_t)wav[sample_index++]);
 	return true;
 }
 
 int main() {
+	// Storage for repeating timer
+	repeating_timer_t timer_config;
+
 	// Tell GPIO 13 to be allocated to the PWM (this is also onboard LED)
 	gpio_set_function(13, GPIO_FUNC_PWM);
 
@@ -64,4 +46,14 @@ int main() {
 
 	// Set up a repeated timer
 	add_repeating_timer_us(CALLBACK_PERIOD, repeating_timer_callback, NULL, &timer_config);
+
+	while (true) { }
+
+	// while (true) {
+	// 	if (sample_index > max_table_index) {
+	// 		sample_index = 0;
+	// 	}
+	// 	pwm_set_chan_level(slice_num, PWM_CHAN_B, (uint16_t)wav[sample_index++]);
+	// 	sleep_us(CALLBACK_PERIOD);
+	// }
 }
