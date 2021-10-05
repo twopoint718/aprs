@@ -8,12 +8,16 @@
 //                   5MHz         COUNTER_TOP == 24
 #define COUNTER_TOP 124
 
+// Bell 202 frequencies
+#define SPACE_FREQ 2200
+#define  MARK_FREQ 1200
+
 // Number of steps in the accumulator (should be a power of 2)
 #define ACCUMULATOR_STEPS 2048
 
 // Time in us between timer interrupts (sample updates) 2us == 500kHz
 //                                                      7us =~ 143kHz
-#define CALLBACK_PERIOD 7
+#define CALLBACK_PERIOD 10
 
 // #define TABLE_SIZE_512
 // #define TABLE_SIZE_256

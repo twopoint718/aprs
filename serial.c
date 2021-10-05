@@ -11,15 +11,20 @@ static uint16_t slice_num;
 // Step (phase) in the wav table
 uint16_t sample_index;
 
+volatile struct DDS dds;
+
 bool repeating_timer_callback(struct repeating_timer *t) {
-	if (sample_index > max_table_index) {
-		sample_index = 0;
-	}
+	// TODO: implement ISR
 	pwm_set_chan_level(slice_num, PWM_CHAN_B, (uint16_t)wav[sample_index++]);
 	return true;
 }
 
 int main() {
+	// DDS struct for tracking sample playback
+	dds.increment = 1455; // ACCUMULATOR_STEPS * 100000 / (TABLE_SIZE * SPACE_FREQ)
+	dds.accumulator = 0;
+	dds.position = 0;
+
 	// Storage for repeating timer
 	repeating_timer_t timer_config;
 
@@ -48,12 +53,4 @@ int main() {
 	add_repeating_timer_us(CALLBACK_PERIOD, repeating_timer_callback, NULL, &timer_config);
 
 	while (true) { }
-
-	// while (true) {
-	// 	if (sample_index > max_table_index) {
-	// 		sample_index = 0;
-	// 	}
-	// 	pwm_set_chan_level(slice_num, PWM_CHAN_B, (uint16_t)wav[sample_index++]);
-	// 	sleep_us(CALLBACK_PERIOD);
-	// }
 }
