@@ -5,17 +5,17 @@ cmake_minimum_required (VERSION 3.19)
 include(pico_sdk_import.cmake)
 
 # Create a project
-project(Serial_project)
+project(Aprs)
 
 # Initialize the SDK
 pico_sdk_init()
 
-add_executable(helloworld serial.c)
+add_executable(aprs aprs.c)
 
 # Direct stdio to USB (CDC)
-pico_enable_stdio_usb(helloworld 1)
-pico_enable_stdio_uart(helloworld 0)
+pico_enable_stdio_usb(aprs 1)
+pico_enable_stdio_uart(aprs 0)
 
-target_link_libraries(helloworld pico_stdlib hardware_pwm)
+target_link_libraries(aprs pico_stdlib hardware_pwm)
 
-pico_add_extra_outputs(helloworld)
+pico_add_extra_outputs(aprs)

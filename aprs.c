@@ -1,6 +1,6 @@
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
-#include "serial.h"
+#include "aprs.h"
 
 // Number of sine wave samples in the table
 const uint16_t max_table_index = (sizeof(wav) / sizeof(uint8_t)) - 1;
