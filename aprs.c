@@ -11,19 +11,28 @@ static uint16_t slice_num;
 // Step (phase) in the wav table
 uint16_t sample_index;
 
-volatile struct DDS dds;
+// DDS: Direct Digital Synthesis see:
+// https://hackaday.com/2016/02/12/embed-with-elliot-audio-playback-with-direct-digital-synthesis/
+volatile struct DDS space_symbol; // modified in interrupt, must be volatile
 
 bool repeating_timer_callback(struct repeating_timer *t) {
-	// TODO: implement ISR
-	pwm_set_chan_level(slice_num, PWM_CHAN_B, (uint16_t)wav[sample_index++]);
+	space_symbol.accumulator += space_symbol.increment;                       // accumulate phase steps
+	space_symbol.position    += space_symbol.accumulator / ACCUMULATOR_STEPS; // advance sample if accumulator "overflows"
+	space_symbol.accumulator  = space_symbol.accumulator % ACCUMULATOR_STEPS; // store residual for next interrupt
+
+	if (space_symbol.position > max_table_index) {
+		space_symbol.position = 0;
+	}
+
+	pwm_set_chan_level(slice_num, PWM_CHAN_B, (uint16_t)wav[space_symbol.position]); // Set output to current sample position
 	return true;
 }
 
 int main() {
 	// DDS struct for tracking sample playback
-	dds.increment = 1455; // ACCUMULATOR_STEPS * 100000 / (TABLE_SIZE * SPACE_FREQ)
-	dds.accumulator = 0;
-	dds.position = 0;
+	space_symbol.increment = 2884;
+	space_symbol.accumulator = 0;
+	space_symbol.position = 0;
 
 	// Storage for repeating timer
 	repeating_timer_t timer_config;

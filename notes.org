@@ -9,3 +9,11 @@
 - [ ] 12-bit ADC, values 0 ... 4095
 ** Interrupts
 ** Clocks
+** PWM
+* Direct Digital Sythesis
+Using an accumulator of 2048, this is how to calculate the increment
+based on other variables:
+
+\begin{equation}
+ACCUMULATOR\_STEPS \frac{100000}{TABLE\_SIZE * SPACE\_FREQ}
+\end{equation}
