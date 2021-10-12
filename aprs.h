@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define DEBUG_PIN 7
+
 // PWM runs at about 488 kHz with COUNTER_TOP == 255
 //                   1MHz         COUNTER_TOP == 124
 //                   5MHz         COUNTER_TOP == 24
@@ -17,7 +19,9 @@
 
 // Time in us between timer interrupts (sample updates) 2us == 500kHz
 //                                                      7us =~ 143kHz
-#define CALLBACK_PERIOD 10
+//                                                     10us =~ 100kHz
+//                                                     20us =~  50kHz
+#define CALLBACK_PERIOD 20
 
 // #define TABLE_SIZE_512
 // #define TABLE_SIZE_256
