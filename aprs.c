@@ -15,27 +15,36 @@ uint16_t sample_index;
 // DDS: Direct Digital Synthesis see:
 // https://hackaday.com/2016/02/12/embed-with-elliot-audio-playback-with-direct-digital-synthesis/
 volatile struct DDS space_symbol; // modified in interrupt, must be volatile
+volatile struct DDS mark_symbol;  // modified in interrupt, must be volatile
+volatile struct DDS *curr_symbol; // pointer to currently sending symbol (either mark or space)
 
 bool repeating_timer_callback(struct repeating_timer *t) {
 	gpio_put(DEBUG_PIN, true); // turn on timing/heartbeat GPIO
-	space_symbol.accumulator += space_symbol.increment;                       // accumulate phase steps
-	space_symbol.position    += space_symbol.accumulator / ACCUMULATOR_STEPS; // advance sample if accumulator "overflows"
-	space_symbol.accumulator  = space_symbol.accumulator % ACCUMULATOR_STEPS; // store residual for next interrupt
+	curr_symbol->accumulator += curr_symbol->increment;                       // accumulate phase steps
+	curr_symbol->position    += curr_symbol->accumulator / ACCUMULATOR_STEPS; // advance sample if accumulator "overflows"
+	curr_symbol->accumulator  = curr_symbol->accumulator % ACCUMULATOR_STEPS; // store residual for next interrupt
 
-	if (space_symbol.position > max_table_index) {
-		space_symbol.position = space_symbol.position % table_size;
+	if (curr_symbol->position > max_table_index) {
+		curr_symbol->position = curr_symbol->position % table_size;
 	}
 
-	pwm_set_chan_level(slice_num, PWM_CHAN_B, (uint16_t)wav[space_symbol.position]); // Set output to current sample position
+	pwm_set_chan_level(slice_num, PWM_CHAN_B, (uint16_t)wav[curr_symbol->position]); // Set output to current sample position
 	gpio_put(DEBUG_PIN, false); // turn off timing/heartbeat GPIO
 	return true;
 }
 
 int main() {
-	// DDS struct for tracking sample playback
-	space_symbol.increment = 5767;
+	// DDS structs for tracking sample playback
+	space_symbol.increment = 5767; // See README
 	space_symbol.accumulator = 0;
 	space_symbol.position = 0;
+
+	mark_symbol.increment = 3146; // See README
+	mark_symbol.accumulator = 0;
+	mark_symbol.position = 0;
+
+	// initialize with mark symbol
+	curr_symbol = &mark_symbol;
 
 	// Storage for repeating timer
 	repeating_timer_t timer_config;

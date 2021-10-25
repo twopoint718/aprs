@@ -8,6 +8,14 @@ I'm using an [Adafruit Feather RP2040 board](https://learn.adafruit.com/adafruit
 The sine wave is created by applying PWM output to a 3.1 kHz low-pass filter.
 Via software it is able to produce 2-FSK at 1200 bps using [Bell 202](https://en.wikipedia.org/wiki/Bell_202_modem) (-ish) 1200 Hz/2200 Hz tones.
 
+Block Diagram
+---
+
+![block diagram](doc/block_diagram.png)
+
+Higher-level features are near the top lower-level are near the bottom.
+The hardware PWM at 1MHz is driven by a 64-sample wave table that alters the duty cycle from 0 to 100%.
+
 Definitions & Concepts
 ---
 
@@ -43,10 +51,12 @@ This is what will make up our actual output signal.
 
 ### Audio Signal
 
+#### Space Tone
+
 Now we have to deal with generating the audio signal.
 This involves determining the correct sampling period mentioned above.
 We have 64 samples for our sine wave.
-The higher frequency in Bell 202 is _space_ (as in [mark and space](https://en.wikipedia.org/wiki/Mark_and_space)) and it is 2,200 Hz.
+The higher frequency in Bell 202 is, zero (0) or _space_ (as in [mark and space](https://en.wikipedia.org/wiki/Mark_and_space)) and it is 2,200 Hz.
 We have to "play back" 64 samples per cycle, which happens 2,200 times per second.
 If $T_A$ is *actual* sampling period then:
 
@@ -66,11 +76,26 @@ If the frequency should be higher, add more steps on each interrupt.
 To go slower, add fewer steps each time.
 
 To put numbers to it, I want to know how many steps I should *increment* for each interrupt.
-I'm aiming for a 2,200Hz (f) sound, 64 samples (N), a 10us interrupt period ($T_C$), and 2048 steps in the phase accumulator (A).
+I'm aiming for a 2,200Hz (f) sound, 64 samples (N), a 20us interrupt period ($T_C$), and 2048 steps in the phase accumulator (A).
 $T_A$ represents the *ideal* sample period, it's split into 2048 steps.
 If 7.102us is 2048 steps, then 10us will be a bit more than that:
 
-$$ increment = A\frac{T_C}{T_A} = 2048\frac{10\mu s}{7.102\mu s} = 2884 $$
+$$ increment = A\frac{T_C}{T_A} = 2048\frac{20\mu s}{7.102\mu s} = 5767 $$
+
+#### Mark Tone
+
+To derive variables for the _mark_ tone (representing a binary 1) of 1,200 Hz we can run through similar math.
+
+$$ 1200 Hz = \frac{1}{64 T_A} $$
+$$ T_A = \frac{1}{64 * 1200 Hz} $$
+$$ T_A \approx 13 \mu s $$
+
+
+Then, by similar reasoning as above, I came up with:
+
+$$ increment = A\frac{T_C}{T_A} = 2048\frac{20\mu s}{13.02\mu s} = 3146 $$
+
+
 
 References
 ---
