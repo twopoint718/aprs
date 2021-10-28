@@ -18,7 +18,19 @@ volatile struct DDS space_symbol; // modified in interrupt, must be volatile
 volatile struct DDS mark_symbol;  // modified in interrupt, must be volatile
 volatile struct DDS *curr_symbol; // pointer to currently sending symbol (either mark or space)
 
-bool repeating_timer_callback(struct repeating_timer *t) {
+void send_one() {
+	mark_symbol.accumulator = curr_symbol->accumulator;
+	mark_symbol.position = curr_symbol->position;
+	curr_symbol = &mark_symbol;
+}
+
+void send_zero() {
+	space_symbol.accumulator = curr_symbol->accumulator;
+	space_symbol.position = curr_symbol->position;
+	curr_symbol = &space_symbol;
+}
+
+bool repeating_timer_callback(repeating_timer_t *t) {
 	gpio_put(DEBUG_PIN, true); // turn on timing/heartbeat GPIO
 	curr_symbol->accumulator += curr_symbol->increment;                       // accumulate phase steps
 	curr_symbol->position    += curr_symbol->accumulator / ACCUMULATOR_STEPS; // advance sample if accumulator "overflows"

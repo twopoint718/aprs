@@ -49,9 +49,10 @@ When the auto-incrementing counter reaches `pwm_level`, the PWM output goes low.
 `wav` is a table of 64 8-bit samples of an ideal sine wave.
 This is what will make up our actual output signal.
 
-### Audio Signal
+Audio Signal
+---
 
-#### Space Tone
+### Space Tone
 
 Now we have to deal with generating the audio signal.
 This involves determining the correct sampling period mentioned above.
@@ -82,7 +83,7 @@ If 7.102us is 2048 steps, then 10us will be a bit more than that:
 
 $$ increment = A\frac{T_C}{T_A} = 2048\frac{20\mu s}{7.102\mu s} = 5767 $$
 
-#### Mark Tone
+### Mark Tone
 
 To derive variables for the _mark_ tone (representing a binary 1) of 1,200 Hz we can run through similar math.
 
@@ -95,7 +96,19 @@ Then, by similar reasoning as above, I came up with:
 
 $$ increment = A\frac{T_C}{T_A} = 2048\frac{20\mu s}{13.02\mu s} = 3146 $$
 
+AX.25 & NRZI
+---
 
+Higher level protocol details follow.
+
+### NRZI
+
+Non-return to zero-inverted is an encoding scheme that looks like the following:
+
+![NRZI](doc/NRZI_example.png)
+
+During each period, if there is a one then the signal _transitions_ whether or not it was high or low before.
+If the bit is a zero, then there is no transition.
 
 References
 ---
